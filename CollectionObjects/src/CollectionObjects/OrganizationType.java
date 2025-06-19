@@ -1,5 +1,7 @@
 package CollectionObjects;
 
+import java.io.Serializable;
+
 /**
  * Перечисление OrganizationType представляет типы организаций.
  * Возможные значения:

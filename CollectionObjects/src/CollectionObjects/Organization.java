@@ -1,10 +1,14 @@
 package CollectionObjects;
 
 import CollectionObjects.Address;
+
+import java.io.Serializable;
+
 /**
  * Класс Organization представляет организацию с названием, годовым оборотом, типом и официальным адресом.
  */
-public class Organization {
+public class Organization implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Integer id; // Уникальный идентификатор организации (может быть null)
     private String name; // Название организации
     private float annualTurnover; // Годовой оборот организации

@@ -1,9 +1,12 @@
 package CollectionObjects;
 
+import java.io.Serializable;
+
 /**
  * Класс Location представляет местоположение с координатами (x, y, z) и названием.
  */
-public class Location {
+public class Location implements Serializable {
+    private static final long serialVersionUID = 1L;
     private long x;      // Координата x
     private double y;    // Координата y
     private Integer z;   // Координата z (может быть null)

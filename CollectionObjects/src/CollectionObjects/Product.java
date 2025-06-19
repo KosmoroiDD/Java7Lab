@@ -1,5 +1,6 @@
 package CollectionObjects;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import CollectionObjects.*;
 
@@ -7,7 +8,8 @@ import CollectionObjects.*;
  * Класс Product представляет продукт с различными атрибутами, такими как название, координаты, дата создания,
  * цена, стоимость производства, единица измерения и производитель.
  */
-public class Product {
+public class Product implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String name; // Название продукта
     private Coordinates coordinates; // Координаты продукта
     private LocalDate creationDate; // Дата создания продукта

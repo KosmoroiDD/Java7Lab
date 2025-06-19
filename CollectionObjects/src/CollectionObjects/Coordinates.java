@@ -1,9 +1,12 @@
 package CollectionObjects;
 
+import java.io.Serializable;
+
 /**
  * Класс Coordinates представляет координаты с двумя значениями: x (тип float) и y (тип Long).
  */
-public class Coordinates {
+public class Coordinates implements Serializable {
+    private static final long serialVersionUID = 1L;
     private float x; // Координата x
     private Long y;  // Координата y
 

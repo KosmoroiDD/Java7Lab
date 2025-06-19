@@ -1,9 +1,12 @@
 package CollectionObjects;
 
+import java.io.Serializable;
+
 /**
  * Класс Address представляет адрес с улицей и местоположением (городом).
  */
-public class Address {
+public class Address implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String street; // Название улицы
     private Location town; // Местоположение (город)
 

@@ -1,5 +1,7 @@
 package CollectionObjects;
 
+import java.io.Serializable;
+
 /**
  * Перечисление UnitOfMeasure представляет единицы измерения.
  * Возможные значения:
