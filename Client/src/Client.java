@@ -54,7 +54,6 @@ public class Client {
                         System.out.print("> ");
                         continue;
                     }
-                    System.out.println(text);
                     processUserPrompt(request[0], arguments);
                     System.out.print("> ");
                 }
@@ -81,40 +80,55 @@ public class Client {
         }
         else {
             Request request = new Request(command, arguments);
-            System.out.println(request);
             send(request);
         }
     }
 
     public void send(Request request) throws IOException{
         try{
-            ByteBuffer buffer = ByteBuffer.allocate(4096);
+            // Отправка запроса
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(request);
-            buffer.put(baos.toByteArray());
-            buffer.flip();
-            while (buffer.hasRemaining()){
-                chnl.write(buffer);
+            byte[] requestData = baos.toByteArray();
+
+            ByteBuffer writeBuffer = ByteBuffer.wrap(requestData);
+            while (writeBuffer.hasRemaining()) {
+                chnl.write(writeBuffer);
             }
-            oos.close();
-            buffer.clear();
-            int bytesRead = chnl.read(buffer);
-            if (bytesRead == -1){
-                System.out.println("Возникла проблема: получено пустое сообщение от сервера (" + chnl.getRemoteAddress() + ").");
+
+            // Получение ответа
+            ByteBuffer readBuffer = ByteBuffer.allocate(4096);
+            int bytesRead;
+
+            // Ждем ответа с таймаутом
+            long startTime = System.currentTimeMillis();
+            while ((bytesRead = chnl.read(readBuffer)) == 0) {
+                if (System.currentTimeMillis() - startTime > 5000) {
+                    throw new SocketTimeoutException("Timeout waiting for response");
+                }
+                Thread.sleep(100);
+            }
+
+            if (bytesRead == -1) {
+                System.out.println("Сервер закрыл соединение");
                 return;
             }
-            buffer.flip();
-            try(ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array());
-            ObjectInputStream ois = new ObjectInputStream(bais)){
-            Object answer = ois.readObject();
-                receive(answer);
-                ois.close();
-                buffer.clear();
+
+            readBuffer.flip();
+            byte[] responseData = new byte[readBuffer.remaining()];
+            readBuffer.get(responseData);
+
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(responseData);
+                 ObjectInputStream ois = new ObjectInputStream(bais)) {
+                Object answer = ois.readObject();
+                System.out.println(answer);
             }
         } catch (IOException e) {
             System.out.println("the server is not reachable as of now, try again later...");
         } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }

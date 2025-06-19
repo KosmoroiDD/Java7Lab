@@ -19,7 +19,6 @@ public class Server extends Thread {
     private static Server server;
     public static ServerSocketChannel channel;
     public static int port = 9999;
-    Response response;
     public static CommandsProvider commandsProvider;
     public static Collectionss collectionss;
     private static String filename;
@@ -32,7 +31,7 @@ public class Server extends Thread {
             channel.configureBlocking(false);
             server.setCommandsProvider(new CommandsProvider());
             server.setCollectionss(new Collectionss());
-            ByteBuffer buffer = ByteBuffer.allocate(4096);
+            ByteBuffer buffer = ByteBuffer.allocate(4096*10);
             try {
                 OutputStreamWriter outputStream = new OutputStreamWriter(new FileOutputStream(filename));
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -75,16 +74,18 @@ public class Server extends Thread {
                                         System.out.println("|R| Получен запрос на выполнение команды /" + command
                                                 + " от клиента (" + client.getRemoteAddress() + ").");
                                         buffer.clear();
-                                        String response = "Результат выполнения команды /" + command + ", запрошенной клиентом ("
-                                                + client.getRemoteAddress() + "): \n-----\n" + CommandsProvider.call(request) + "\n-----";
+                                        Response result = CommandsProvider.call(request);
                                         Thread.sleep(1000);
-                                        buffer.flip();
-                                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                        ObjectOutputStream oos = new ObjectOutputStream(baos);
-                                        oos.writeObject(response);
-                                        buffer.put(baos.toByteArray());
-                                        while (buffer.hasRemaining()) {
-                                            client.write(buffer);
+
+                                        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                                            oos.writeObject(result.getMessage());
+                                            byte[] responseData = baos.toByteArray();
+
+                                            ByteBuffer responseBuffer = ByteBuffer.wrap(responseData);
+                                            while (responseBuffer.hasRemaining()) {
+                                                client.write(responseBuffer);
+                                            }
                                         }
                                         buffer.clear();
                                     }
