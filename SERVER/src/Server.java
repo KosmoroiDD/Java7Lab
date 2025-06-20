@@ -18,8 +18,6 @@ import network.Response;
 import static CollectionObjects.Collectionss.stringCollection;
 
 public class Server extends Thread {
-    private static Server server;
-    public static ServerSocketChannel channel;
     public static int port = 9999;
     public static CommandsProvider commandsProvider;
     public static Collectionss collectionss;
@@ -28,27 +26,17 @@ public class Server extends Thread {
 
     public void run() {
         try (ServerSocketChannel channel = ServerSocketChannel.open()) {
-            server = new Server();
+            Server server = new Server();
             channel.socket().bind(new InetSocketAddress(port));
             channel.configureBlocking(false);
             server.setCommandsProvider(new CommandsProvider());
             server.setCollectionss(new Collectionss());
             ByteBuffer buffer = ByteBuffer.allocate(4096);
-            try {
-                OutputStreamWriter outputStream = new OutputStreamWriter(new FileOutputStream(filename));
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    try {
-                        System.out.println(stringCollection);
-                        outputStream.write(stringCollection.toString());
-                        XmlParser.saveToXml(stringCollection, filename);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    System.out.println("Server stopped. Collection saved.");
-                }));
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println(stringCollection);
+                XmlParser.saveToXml(stringCollection, filename);
+                System.out.println("Server stopped. Collection saved.");
+            }));
             System.out.println("Ожидание клиента на порт " + channel.socket().getLocalPort() + "...");
             while (true) {
                 try (SocketChannel client = channel.accept()) {
@@ -137,19 +125,18 @@ public class Server extends Thread {
             return filename;
         }
 
-        public static Server setFilename (String filename){
+        public static void setFilename (String filename){
             Server.filename = filename;
-            return null;
         }
 
-        public static void main (String[] args) {
+        public static void main (String[] args) throws IOException {
             // Проверка наличия аргумента командной строки
             if (args.length == 0) {
                 System.out.println("Ошибка: Не указано имя файла в аргументах командной строки.");
                 return;
             }
-            server = Server.setFilename(args[0]);
-            Show.inputFileName = args[0];
+                setFilename(args[0]);
+                Show.inputFileName = args[0];
             // Сохранение имени файла из аргументов командной строки
             Thread t = new Server();
             t.start();

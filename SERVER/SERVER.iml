@@ -12,5 +12,6 @@
     <orderEntry type="library" name="org.eclipse.persistence.moxy-5.0.0-B08" level="project" />
     <orderEntry type="library" name="jakarta.xml.bind-api-4.0.2" level="project" />
     <orderEntry type="library" name="jaxb-impl-4.0.3" level="project" />
+    <orderEntry type="library" name="jakarta.xml.bind-api-4.0.3" level="project" />
   </component>
 </module>

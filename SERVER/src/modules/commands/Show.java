@@ -28,11 +28,9 @@ public class Show implements Command {
     public String getName() {
         return "show";
     }
-    public static String line;
+    public static String line = "aaaaaaaaaaaaaaaaaaaaaaaaa";
     @Override
     public Response call(String strArg, Serializable objectArg) {
-        //System.out.println(inputFileName);
-        //return new Response(stringCollection.toString());
         try {
             if (inputFileName.isEmpty() || inputFileName.equals("null")) {
                 return new Response("Коллекция пуста.");
