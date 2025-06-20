@@ -1,4 +1,6 @@
 import CollectionObjects.*;
+
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.InputMismatchException;
 import java.util.Scanner;
@@ -6,7 +8,7 @@ import java.util.Scanner;
 /**
  * Класс Filler отвечает за заполнение объекта класса Product данными, введенными пользователем.
  */
-public class Filler {
+public class Filler implements Serializable {
 
     public static Product createProduct() {
         try {
