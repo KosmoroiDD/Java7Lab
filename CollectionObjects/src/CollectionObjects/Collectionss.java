@@ -4,11 +4,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
+
 /**
  * Класс Collectionss представляет коллекцию продуктов, хранящуюся в виде HashMap.
  * Ключом является целое число (ID продукта), а значением — объект класса Product.
  */
 public class Collectionss {
+
     /**
      * Статическое поле, представляющее коллекцию продуктов.
      * Ключом является целое число (ID продукта), а значением — объект класса Product.
@@ -26,5 +28,6 @@ public class Collectionss {
     public static void setCollection(HashMap<Integer, Product> collection) {
         stringCollection = stringCollection;
     }
+
 
 }
