@@ -2,10 +2,8 @@ package modules.commands;
 
 import modules.Command;
 import network.Response;
-import CollectionObjects.Collectionss;
-
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.logging.Logger;
 
 import static CollectionObjects.Collectionss.stringCollection;
 
@@ -13,7 +11,7 @@ import static CollectionObjects.Collectionss.stringCollection;
  * Класс Clean реализует команду очистки коллекции.
  */
 public class Clean implements Command {
-
+    static Logger log = Logger.getLogger(Clean.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -37,6 +35,7 @@ public class Clean implements Command {
     @Override
     public Response call(String strArg, Serializable objArg) {
         stringCollection.clear();
+        log.info("Collection cleared");
         return new Response("collection had been successfully cleared");
     }
 }

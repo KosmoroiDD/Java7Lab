@@ -65,7 +65,7 @@ public class Client {
 
 
     public void processUserPrompt(String command, String arguments) throws IOException, ClassNotFoundException {
-        if (command.equalsIgnoreCase("add") || command.equalsIgnoreCase("update_id")){
+        if (command.equalsIgnoreCase("add")){
             Product objArgument = Filler.createProduct();
             if (objArgument != null) {
                 send(new Request(command, arguments, objArgument));
@@ -131,9 +131,6 @@ public class Client {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-    public void receive(Object answer) throws IOException{
-        System.out.println("Получено сообщение от сервера (" + chnl.getRemoteAddress() + "):\n" + answer);
     }
 
     public void executeScript(String filepath){

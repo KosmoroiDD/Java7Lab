@@ -1,8 +1,10 @@
 package modules.commands;
+import CollectionObjects.Product;
 import network.Response;
 import modules.Command;
 
 import java.io.Serializable;
+import java.util.logging.Logger;
 
 import static java.lang.Integer.parseInt;
 
@@ -10,7 +12,7 @@ import static java.lang.Integer.parseInt;
  * Класс Replace_Lower реализует команду замены значения по ключу, если новое значение меньше старого.
  */
 public class Replace_Lower implements Command {
-
+    static Logger log = Logger.getLogger(Replace_Lower.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -33,7 +35,20 @@ public class Replace_Lower implements Command {
 
     @Override
     public Response call(String strArg, Serializable objectArg) {
-
-        return null;
+        try {
+            Product product = (Product) objectArg;
+            if (product.getPrice() < parseInt(strArg)) {
+                product.setPrice(product.getPrice() * product.getPrice());
+                log.info("Price updated to " + product.getPrice());
+                return new Response("Price updated successfully");
+            } else {
+                log.info("Price higher than old price");
+                return new Response("Price higher than old");
+            }
+        }
+        catch (Exception e) {
+            log.severe("Before create product!");
+            return new Response("Before create product!");
+        }
     }
 }

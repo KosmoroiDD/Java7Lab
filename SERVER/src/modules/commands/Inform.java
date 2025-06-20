@@ -6,12 +6,13 @@ import CollectionObjects.Product;
 import network.Response;
 
 import java.io.Serializable;
+import java.util.logging.Logger;
 
 /**
  * Класс Inform реализует команду вывода информации о коллекции.
  */
 public class Inform implements Command {
-
+    static Logger log = Logger.getLogger(Inform.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -37,6 +38,7 @@ public class Inform implements Command {
         String ret = "collection type: " + Collectionss.getCollection().getClass().getSimpleName() + "\n" +
                 "element type: " + Product.class.getSimpleName() + "\n" +
                 "element amount: " + Collectionss.getCollection().size() + "\n";
+        log.info(ret);
         return new Response(ret);
     }
 }

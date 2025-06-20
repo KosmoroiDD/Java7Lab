@@ -1,15 +1,21 @@
 package modules.commands;
 
+import CollectionObjects.Product;
 import modules.Command;
 import network.Response;
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import static CollectionObjects.Collectionss.stringCollection;
 
 
 /**
  * Класс MinName реализует команду вывода объекта из коллекции с минимальным значением поля name.
  */
 public class MinName implements Command {
-
+    static Logger log = Logger.getLogger(MinName.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -32,7 +38,17 @@ public class MinName implements Command {
 
     @Override
     public Response call(String strArg, Serializable objectArg) {
+        try {
+            Optional<Product> minProduct = stringCollection.values().stream()
+                    .min(Comparator.comparing(Product::getName));
 
-        return null;
+            log.info("Min product name completed");
+            return minProduct.map(product -> new Response(product.toString())).orElseGet(()
+                    -> new Response("Collection is empty"));
+        }
+        catch (Exception e) {
+            log.warning("Min product name failed");
+            return new Response(e.getMessage());
+        }
     }
 }

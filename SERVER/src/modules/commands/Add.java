@@ -6,14 +6,15 @@ import modules.XmlParser;
 import network.Response;
 import java.io.Serializable;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.logging.Logger;
+
 import static CollectionObjects.Collectionss.stringCollection;
 
 /**
  * Класс Add реализует команду добавления нового элемента в коллекцию.
  */
 public class Add implements Command {
-    static Scanner scanner = new Scanner(System.in);
+    static Logger log = Logger.getLogger(Add.class.getName());
     public static String filename;
 
     /**
@@ -35,16 +36,19 @@ public class Add implements Command {
     public String getName() {
         return "add";
     }
-
-    @Override
-    public Response call(String strArg, Serializable objArg) {
+    public int generateId(){
         Random random = new Random();
         int id;
         id = random.nextInt(10000) + 1;
-        System.out.println(objArg.toString());
+        return id;
+    }
+
+    @Override
+    public Response call(String strArg, Serializable objArg) {
         Product product = (Product) objArg;
-        stringCollection.put(id, product);
+        stringCollection.put(generateId(), product);
         XmlParser.saveToXml(stringCollection, filename);
+        log.info("Collection successfully added product");
         return new Response("item successfully added to collection!");
     }
 }

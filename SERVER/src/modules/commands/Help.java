@@ -6,12 +6,13 @@ import network.Response;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Класс Help реализует команду вывода справки по доступным командам.
  */
 public class Help implements Command {
-
+    static Logger log = Logger.getLogger(Help.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -39,6 +40,7 @@ public class Help implements Command {
         for (Map.Entry<String, Command> entry : commands.entrySet()){
             ret.append(entry.getKey()).append(" - ").append(entry.getValue().getDescription()).append("\n");
         }
+        log.info("Command successfully executed: ");
         return new Response(ret.toString());
     }
 }

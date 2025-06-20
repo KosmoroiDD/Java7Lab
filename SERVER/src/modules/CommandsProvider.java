@@ -6,13 +6,14 @@ import modules.commands.*;
 
 
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Класс `CommandsProvider` предоставляет доступ к набору команд, доступных в приложении.
  * Он инициализирует и хранит команды в `HashMap`, обеспечивая возможность их получения по имени.
  */
 public class CommandsProvider {
-
+    static Logger log = Logger.getLogger(CommandsProvider.class.getName());
     /**
      * `HashMap`, содержащий доступные команды, где ключ - имя команды, а значение - объект `Command`.
      */
@@ -21,8 +22,14 @@ public class CommandsProvider {
     public static Response call(Request request) {
         try {
             Command command = CommandsProvider.getCommandByKey(request.getCommandName());
+            if (command == null) {
+                log.info("Command " + request.getCommandName() + " not found");
+                return new Response("Command " + request.getCommandName() + " not found");
+            }
+            log.info("Command " + request.getCommandName() + " executed");
             return command.call(request.getCommandStrArg(), request.getCommandObjArg());
         } catch (NoSuchCommandException e){
+            log.info(e.getMessage());
             return new Response("Не нашел команду: " + e.getMessage());
         }
     }

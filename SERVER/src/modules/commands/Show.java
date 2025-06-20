@@ -4,14 +4,14 @@ import modules.Command;
 import modules.XmlParser;
 import network.Response;
 import java.io.*;
-
-import static CollectionObjects.Collectionss.stringCollection;
+import java.util.logging.Logger;
 
 /**
  * Класс Show реализует команду вывода всех элементов коллекции в строковом представлении.
  */
 public class Show implements Command {
     public static String inputFileName;
+    static Logger log = Logger.getLogger(Show.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -33,6 +33,7 @@ public class Show implements Command {
     }
     @Override
     public Response call(String strArg, Serializable objectArg) {
+        log.info("Command successfully executed");
         return new Response(XmlParser.readFromXml(inputFileName).toString());
     }
 

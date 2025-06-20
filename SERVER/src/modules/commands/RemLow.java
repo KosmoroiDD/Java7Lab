@@ -1,16 +1,22 @@
 package modules.commands;
+import CollectionObjects.Product;
 import network.Response;
 import modules.Command;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 
+import static CollectionObjects.Collectionss.stringCollection;
 import static java.lang.Integer.parseInt;
 
 /**
  * Класс RemLow реализует команду удаления из коллекции всех элементов, ключи которых меньше заданного.
  */
 public class RemLow implements Command {
-
+    static Logger log = Logger.getLogger(RemLow.class.getName());
     /**
      * Возвращает описание команды.
      *
@@ -34,7 +40,27 @@ public class RemLow implements Command {
 
     @Override
     public Response call(String strArg, Serializable objArg) {
-
-        return null;
+        try {
+            Integer id2 = parseInt(strArg);
+            // Список для хранения ключей элементов, которые нужно удалить
+            List<Integer> IdToRemove = new ArrayList<>();
+            // Поиск элементов, ключи которых меньше заданного
+            for (Map.Entry<Integer, Product> entry : stringCollection.entrySet()) {
+                Integer id = entry.getKey();
+                if (id.compareTo(id2) < 0) {
+                    IdToRemove.add(id);
+                }
+            }
+            // Удаление найденных элементов
+            for (Integer id : IdToRemove) {
+                stringCollection.remove(id);
+            }
+            log.info("Collections with lower case deleted");
+            return new Response("Collections with lower case deleted");
+        }
+        catch (Exception e) {
+            log.severe(e.getMessage());
+            return new Response("Error: " + e.getMessage());
+        }
     }
 }
