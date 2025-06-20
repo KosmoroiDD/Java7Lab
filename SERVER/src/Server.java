@@ -11,9 +11,9 @@ import java.nio.channels.SocketChannel;
 import java.sql.Timestamp;
 
 import modules.commands.Show;
-import modules.XmlParser;
 import network.Request;
 import network.Response;
+import modules.commands.Add;
 
 import static CollectionObjects.Collectionss.stringCollection;
 
@@ -34,7 +34,6 @@ public class Server extends Thread {
             ByteBuffer buffer = ByteBuffer.allocate(4096);
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println(stringCollection);
-                XmlParser.saveToXml(stringCollection, filename);
                 System.out.println("Server stopped. Collection saved.");
             }));
             System.out.println("Ожидание клиента на порт " + channel.socket().getLocalPort() + "...");
@@ -88,8 +87,6 @@ public class Server extends Thread {
                                 throw new RuntimeException(e);
                             }
                         }
-                    }else{
-                        Thread.sleep(100);
                     }
 
                 } catch (IOException e) {
@@ -137,6 +134,7 @@ public class Server extends Thread {
             }
                 setFilename(args[0]);
                 Show.inputFileName = args[0];
+                Add.filename = args[0];
             // Сохранение имени файла из аргументов командной строки
             Thread t = new Server();
             t.start();

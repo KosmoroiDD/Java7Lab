@@ -2,6 +2,7 @@ package modules.commands;
 
 import CollectionObjects.Product;
 import modules.Command;
+import modules.XmlParser;
 import network.Response;
 import java.io.Serializable;
 import java.util.Random;
@@ -13,6 +14,7 @@ import static CollectionObjects.Collectionss.stringCollection;
  */
 public class Add implements Command {
     static Scanner scanner = new Scanner(System.in);
+    public static String filename;
 
     /**
      * Возвращает описание команды.
@@ -42,6 +44,7 @@ public class Add implements Command {
         System.out.println(objArg.toString());
         Product product = (Product) objArg;
         stringCollection.put(id, product);
+        XmlParser.saveToXml(stringCollection, filename);
         return new Response("item successfully added to collection!");
     }
 }
