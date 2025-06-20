@@ -3,12 +3,16 @@ package CollectionObjects;
 import java.io.Serializable;
 import java.time.LocalDate;
 import CollectionObjects.*;
+import jakarta.xml.bind.annotation.*;
 
 /**
  * Класс Product представляет продукт с различными атрибутами, такими как название, координаты, дата создания,
  * цена, стоимость производства, единица измерения и производитель.
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Product implements Serializable {
+    @XmlAttribute
     private static final long serialVersionUID = 1L;
     private String name; // Название продукта
     private Coordinates coordinates; // Координаты продукта
@@ -50,6 +54,9 @@ public class Product implements Serializable {
     public void setCoordinates(Coordinates coordinates) {
         this.coordinates = coordinates;
     }
+    public Coordinates getCoordinates() {
+        return this.coordinates;
+    }
 
     /**
      * Устанавливает дату создания продукта.
@@ -58,6 +65,9 @@ public class Product implements Serializable {
      */
     public void setCreationDate(LocalDate creationDate) {
         this.creationDate = creationDate;
+    }
+    public LocalDate getCreationDate() {
+        return this.creationDate;
     }
 
     /**
@@ -86,6 +96,9 @@ public class Product implements Serializable {
     public void setManufactureCost(Integer manufactureCost) {
         this.manufactureCost = manufactureCost;
     }
+    public Integer getManufactureCost() {
+        return this.manufactureCost;
+    }
 
     /**
      * Устанавливает единицу измерения продукта.
@@ -95,6 +108,9 @@ public class Product implements Serializable {
     public void setUnitOfMeasure(UnitOfMeasure unitOfMeasure) {
         this.unitOfMeasure = unitOfMeasure;
     }
+    public UnitOfMeasure getUnitOfMeasure() {
+        return this.unitOfMeasure;
+    }
 
     /**
      * Устанавливает производителя продукта.
@@ -103,6 +119,9 @@ public class Product implements Serializable {
      */
     public void setManufacturer(Organization manufacturer) {
         this.manufacturer = manufacturer;
+    }
+    public Organization getManufacturer() {
+        return this.manufacturer;
     }
 
     /**
