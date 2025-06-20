@@ -7,6 +7,8 @@ import CollectionObjects.Collectionss;
 import java.io.Serializable;
 import java.util.HashMap;
 
+import static CollectionObjects.Collectionss.stringCollection;
+
 /**
  * Класс Clean реализует команду очистки коллекции.
  */
@@ -34,7 +36,7 @@ public class Clean implements Command {
 
     @Override
     public Response call(String strArg, Serializable objArg) {
-        Collectionss.setCollection(new HashMap<>());
+        stringCollection.clear();
         return new Response("collection had been successfully cleared");
     }
 }

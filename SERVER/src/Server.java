@@ -10,6 +10,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.sql.Timestamp;
 
+import modules.commands.Show;
+import modules.XmlParser;
 import network.Request;
 import network.Response;
 
@@ -21,7 +23,7 @@ public class Server extends Thread {
     public static int port = 9999;
     public static CommandsProvider commandsProvider;
     public static Collectionss collectionss;
-    private static String filename;
+    public static String filename;
 
 
     public void run() {
@@ -31,12 +33,14 @@ public class Server extends Thread {
             channel.configureBlocking(false);
             server.setCommandsProvider(new CommandsProvider());
             server.setCollectionss(new Collectionss());
-            ByteBuffer buffer = ByteBuffer.allocate(4096*10);
+            ByteBuffer buffer = ByteBuffer.allocate(4096);
             try {
                 OutputStreamWriter outputStream = new OutputStreamWriter(new FileOutputStream(filename));
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                     try {
+                        System.out.println(stringCollection);
                         outputStream.write(stringCollection.toString());
+                        XmlParser.saveToXml(stringCollection, filename);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -138,13 +142,14 @@ public class Server extends Thread {
             return null;
         }
 
-        public static void main (String[]args) {
+        public static void main (String[] args) {
             // Проверка наличия аргумента командной строки
             if (args.length == 0) {
                 System.out.println("Ошибка: Не указано имя файла в аргументах командной строки.");
                 return;
             }
             server = Server.setFilename(args[0]);
+            Show.inputFileName = args[0];
             // Сохранение имени файла из аргументов командной строки
             Thread t = new Server();
             t.start();
