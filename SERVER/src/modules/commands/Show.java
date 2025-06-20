@@ -1,16 +1,14 @@
 package modules.commands;
 
 import modules.Command;
-import CollectionObjects.Collectionss;
-import CollectionObjects.Product;
 import network.Response;
 import java.io.*;
-import java.util.Collection;
 
 /**
  * Класс Show реализует команду вывода всех элементов коллекции в строковом представлении.
  */
 public class Show implements Command {
+    public static String inputFileName;
     /**
      * Возвращает описание команды.
      *
@@ -30,16 +28,30 @@ public class Show implements Command {
     public String getName() {
         return "show";
     }
-
+    public static String line;
     @Override
     public Response call(String strArg, Serializable objectArg) {
-        Collection<Product> products = Collectionss.getCollections();
-        StringBuilder ret = new StringBuilder();
-
-        for(Product flat : products){
-            ret.append(flat.toString()).append("\n");
+        //System.out.println(inputFileName);
+        //return new Response(stringCollection.toString());
+        try {
+            if (inputFileName.isEmpty() || inputFileName.equals("null")) {
+                return new Response("Коллекция пуста.");
+            } else {
+                BufferedReader reader = new BufferedReader(new FileReader(inputFileName));
+                while ((line = reader.readLine()) != null) {
+                    line = line + "\n";
+                }
+            }
         }
-        return new Response(ret.toString());
+        catch(FileNotFoundException a){
+            System.out.println("Коллекция пуста или же отсутствует");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+        return new Response(line);
     }
 
 

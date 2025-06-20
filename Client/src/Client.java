@@ -68,7 +68,7 @@ public class Client {
         if (command.equalsIgnoreCase("add") || command.equalsIgnoreCase("update_id")){
             Product objArgument = Filler.createProduct();
             if (objArgument != null) {
-                send(new Request(command, arguments, (Serializable) objArgument));
+                send(new Request(command, arguments, objArgument));
             }
         }
         else if (command.equalsIgnoreCase("exit")){
