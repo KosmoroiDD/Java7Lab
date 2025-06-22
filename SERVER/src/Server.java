@@ -4,9 +4,10 @@ import CollectionObjects.*;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.sql.Timestamp;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -26,155 +27,196 @@ public class Server extends Thread {
     public static String filename;
     static FileHandler fileHandler;
 
+    // Thread pools
+    private static final ExecutorService requestReadingPool = Executors.newFixedThreadPool(10);
+    private static final ExecutorService requestProcessingPool = Executors.newCachedThreadPool();
+    public static ForkJoinPool forkJoinPool = new ForkJoinPool();
+
+    // Synchronized collection
+    private static Collection<Object> synchronizedCollection;
+
     static {
         try {
             fileHandler = new FileHandler("server.log");
-            // Устанавливаем формат вывода (можно использовать SimpleFormatter для более читаемого формата)
             fileHandler.setFormatter(new SimpleFormatter());
-
-            // Добавляем обработчик к логгеру
             log.addHandler(fileHandler);
-
-            // Отключаем вывод логов в консоль (если нужно только в файл)
             log.setUseParentHandlers(false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-
     public void run() {
-        try (ServerSocketChannel channel = ServerSocketChannel.open()) {
-            Server server = new Server();
-            channel.socket().bind(new InetSocketAddress(port));
-            channel.configureBlocking(false);
-            server.setCommandsProvider(new CommandsProvider());
-            server.setCollectionss(new Collectionss());
-            ByteBuffer buffer = ByteBuffer.allocate(4096);
+        try (ServerSocketChannel serverChannel = ServerSocketChannel.open();
+             Selector selector = Selector.open()) {
+
+            // Initialize synchronized collection
+            synchronizedCollection = Collections.synchronizedCollection(new ArrayList<>());
+
+            serverChannel.socket().bind(new InetSocketAddress(port));
+            serverChannel.configureBlocking(false);
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            setCommandsProvider(new CommandsProvider());
+            setCollectionss(new Collectionss());
+
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println(stringCollection);
                 log.info("Server stopped. Collection saved.");
                 System.out.println("Server stopped. Collection saved.");
+                requestReadingPool.shutdown();
+                requestProcessingPool.shutdown();
             }));
-            System.out.println("Ожидание клиента на порт " + channel.socket().getLocalPort() + "...");
-            log.info("Server started at " + channel.socket().getLocalPort());
+
+            System.out.println("Ожидание клиента на порт " + serverChannel.socket().getLocalPort() + "...");
+            log.info("Server started at " + serverChannel.socket().getLocalPort());
             log.info("Server waiting for connection...");
+
             while (true) {
-                try (SocketChannel client = channel.accept()) {
-                    if (client != null) {
-                        while (true) {
-                            try {
-                                SocketAddress IPAddress = client.socket().getRemoteSocketAddress();
-                                int port = client.socket().getPort();
-                                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-                                System.out.println("[" + timestamp + ", IP: " + IPAddress + ", Port: " + port + "] ");
-                                log.info("Client connected: "+"[" + timestamp + ", IP: "
-                                        + IPAddress + ", Port: " + port + "] ");
-                                int bytesRead = -1;
-                                bytesRead = client.read(buffer);
-                                if (bytesRead == -1){
-                                    log.info("|X| Разорвано соединение с клиентом ("
-                                            + client.getRemoteAddress() + ").");
-                                    System.out.println("|X| Разорвано соединение с клиентом ("
-                                            + client.getRemoteAddress() + ").");
-                                    client.close();
-                                    return;
-                                }
-                                else {
-                                    buffer.flip();
-                                    try(ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array());
-                                    ObjectInputStream ois = new ObjectInputStream(bais)) {
-                                        Object object = ois.readObject();
-                                        Request request = (Request) object;
-                                        String command = request.getCommandName();
-                                        System.out.println("|R| Получен запрос на выполнение команды /" + command
-                                                + " от клиента (" + client.getRemoteAddress() + ").");
-                                        log.info("Server received command: " + command);
-                                        buffer.clear();
-                                        Response result = CommandsProvider.call(request);
-                                        Thread.sleep(1000);
+                selector.select();
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
 
-                                        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-                                            oos.writeObject(result.getMessage());
-                                            byte[] responseData = baos.toByteArray();
+                while (keys.hasNext()) {
+                    SelectionKey key = keys.next();
+                    keys.remove();
 
-                                            ByteBuffer responseBuffer = ByteBuffer.wrap(responseData);
-                                            while (responseBuffer.hasRemaining()) {
-                                                client.write(responseBuffer);
-                                            }
-                                            log.info("Server sent command: " + command);
-                                        }
-                                        buffer.clear();
-                                    }
-                                    }
-                            } catch (IOException e) {
-                                log.severe("Buffer overflow.");
-                                e.printStackTrace();
-                            } catch (ClassNotFoundException e) {
-                                log.severe("Client disconnected.");
-                                throw new RuntimeException(e);
-                            }
-                        }
+                    if (!key.isValid()) continue;
+
+                    if (key.isAcceptable()) {
+                        acceptClient(serverChannel, selector);
+                    } else if (key.isReadable()) {
+                        requestReadingPool.submit(() -> handleRead(key));
                     }
-
-                } catch (IOException e) {
-                    log.severe("Server stopped.");
-                    e.printStackTrace();
-                }  catch (InterruptedException e) {
-                    log.severe("Client stopped.");
-                    throw new RuntimeException(e);
                 }
             }
-
-
-            } catch(IOException e){
-                log.info("Server stopped.");
-                throw new RuntimeException(e);
-            }
+        } catch (IOException e) {
+            log.severe("Server stopped.");
+            throw new RuntimeException(e);
         }
+    }
 
+    private void acceptClient(ServerSocketChannel serverChannel, Selector selector) throws IOException {
+        SocketChannel client = serverChannel.accept();
+        if (client != null) {
+            client.configureBlocking(false);
+            client.register(selector, SelectionKey.OP_READ);
 
-        public CommandsProvider getCommandsProvider (CommandsProvider commandsProvider){
-            return commandsProvider;
+            SocketAddress IPAddress = client.socket().getRemoteSocketAddress();
+            int port = client.socket().getPort();
+            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+            System.out.println("[" + timestamp + ", IP: " + IPAddress + ", Port: " + port + "] "
+                    + " In Thread: " +  Thread.currentThread().getName());
+            log.info("Client connected: "+"[" + timestamp + ", IP: "
+                    + IPAddress + ", Port: " + port + "] " + " In Thread: " +  Thread.currentThread().getName());
         }
+    }
 
-        public Collectionss getCollections () {
-            return collectionss;
-        }
-        public void setCollectionss (Collectionss collectionss){
-            Server.collectionss = collectionss;
-        }
+    private void handleRead(SelectionKey key) {
+        SocketChannel client = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(4096);
 
-        public void setCommandsProvider (CommandsProvider commandsProvider){
-            Server.commandsProvider = commandsProvider;
-        }
-
-        public String getFilename () {
-            return filename;
-        }
-
-        public static void setFilename (String filename){
-            Server.filename = filename;
-        }
-
-        public static void main (String[] args) throws IOException {
-            // Проверка наличия аргумента командной строки
-            if (args.length == 0) {
-                System.out.println("Ошибка: Не указано имя файла в аргументах командной строки.");
-                log.warning("Invalid arguments.");
+        try {
+            int bytesRead = client.read(buffer);
+            if (bytesRead == -1) {
+                log.info("|X| Разорвано соединение с клиентом ("
+                        + client.getRemoteAddress() + ")." + " In Thread: " +  Thread.currentThread().getName());
+                System.out.println("|X| Разорвано соединение с клиентом ("
+                        + client.getRemoteAddress() + ")." + " In Thread: " +  Thread.currentThread().getName());
+                client.close();
                 return;
             }
-                setFilename(args[0]);
-                Show.inputFileName = args[0];
-                Add.filename = args[0];
-            // Сохранение имени файла из аргументов командной строки
-            Thread t = new Server();
-            t.start();
+
+            buffer.flip();
+            requestProcessingPool.submit(() -> processRequest(buffer, client));
+        } catch (IOException e) {
+            try {
+                client.close();
+            } catch (IOException ex) {
+                log.severe("Error closing client connection: " + ex.getMessage() + " In Thread: "
+                        +  Thread.currentThread().getName());
+            }
+            log.severe("Error reading from client: " + e.getMessage() + " In Thread: "
+                    +  Thread.currentThread().getName());
         }
+    }
+
+    private void processRequest(ByteBuffer buffer, SocketChannel client) {
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(buffer.array());
+             ObjectInputStream ois = new ObjectInputStream(bais)) {
+
+            Object object = ois.readObject();
+            Request request = (Request) object;
+            String command = request.getCommandName();
+            System.out.println("|R| Получен запрос на выполнение команды /" + command
+                    + " от клиента (" + client.getRemoteAddress() + ")." + " In Thread: "
+                    +  Thread.currentThread().getName());
+            log.info("Server received command: " + command + " In Thread: " +  Thread.currentThread().getName());
+
+            Response result = CommandsProvider.call(request);
+
+            // Create new thread for sending response
+            new Thread(() -> sendResponse(result, client)).start();
+
+        } catch (IOException | ClassNotFoundException e) {
+            log.severe("Error processing request: " + e.getMessage()
+                    + " In Thread: " +  Thread.currentThread().getName());
+        }
+    }
+
+    private void sendResponse(Response result, SocketChannel client) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+
+            oos.writeObject(result.getMessage());
+            byte[] responseData = baos.toByteArray();
+            ByteBuffer responseBuffer = ByteBuffer.wrap(responseData);
+
+            while (responseBuffer.hasRemaining()) {
+                client.write(responseBuffer);
+            }
+
+            log.info("Server sent response for command" + " In Thread: " +  Thread.currentThread().getName());
+        } catch (IOException e) {
+            log.severe("Error sending response: " + e.getMessage()
+                    + " In Thread: " +  Thread.currentThread().getName());
+        }
+    }
+
+    public CommandsProvider getCommandsProvider(CommandsProvider commandsProvider) {
+        return commandsProvider;
+    }
+
+    public Collectionss getCollections() {
+        return collectionss;
+    }
+
+    public void setCollectionss(Collectionss collectionss) {
+        Server.collectionss = collectionss;
+    }
+
+    public void setCommandsProvider(CommandsProvider commandsProvider) {
+        Server.commandsProvider = commandsProvider;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public static void setFilename(String filename) {
+        Server.filename = filename;
+    }
+
+    public static void main(String[] args) throws IOException {
+        if (args.length == 0) {
+            System.out.println("Ошибка: Не указано имя файла в аргументах командной строки.");
+            log.warning("Invalid arguments.");
+            return;
+        }
+        setFilename(args[0]);
+        Show.inputFileName = args[0];
+        Add.filename = args[0];
+
+        Thread t = new Server();
+        t.start();
+    }
 }
-
-
-
-
-
