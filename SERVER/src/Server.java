@@ -27,6 +27,11 @@ public class Server extends Thread {
     public static String filename;
     static FileHandler fileHandler;
 
+    // User authentication fields
+    private static final Map<String, String> registeredUsers = new ConcurrentHashMap<>();
+    private static final Map<SocketChannel, String> authenticatedClients = new ConcurrentHashMap<>();
+    private static final String USER_DATA_FILE = "users.dat";
+
     // Thread pools
     private static final ExecutorService requestReadingPool = Executors.newFixedThreadPool(10);
     private static final ExecutorService requestProcessingPool = Executors.newCachedThreadPool();
@@ -41,6 +46,9 @@ public class Server extends Thread {
             fileHandler.setFormatter(new SimpleFormatter());
             log.addHandler(fileHandler);
             log.setUseParentHandlers(false);
+
+            // Load registered users from file
+            loadUsers();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -64,6 +72,7 @@ public class Server extends Thread {
                 System.out.println(stringCollection);
                 log.info("Server stopped. Collection saved.");
                 System.out.println("Server stopped. Collection saved.");
+                saveUsers(); // Save user data on shutdown
                 requestReadingPool.shutdown();
                 requestProcessingPool.shutdown();
             }));
@@ -122,6 +131,7 @@ public class Server extends Thread {
                         + client.getRemoteAddress() + ")." + " In Thread: " +  Thread.currentThread().getName());
                 System.out.println("|X| Разорвано соединение с клиентом ("
                         + client.getRemoteAddress() + ")." + " In Thread: " +  Thread.currentThread().getName());
+                authenticatedClients.remove(client);
                 client.close();
                 return;
             }
@@ -130,6 +140,7 @@ public class Server extends Thread {
             requestProcessingPool.submit(() -> processRequest(buffer, client));
         } catch (IOException e) {
             try {
+                authenticatedClients.remove(client);
                 client.close();
             } catch (IOException ex) {
                 log.severe("Error closing client connection: " + ex.getMessage() + " In Thread: "
@@ -147,19 +158,97 @@ public class Server extends Thread {
             Object object = ois.readObject();
             Request request = (Request) object;
             String command = request.getCommandName();
+
+            // Check if client is authenticated
+            if (!isAuthenticated(client) && !command.equals("login") && !command.equals("register")) {
+                sendResponse(new Response("ERROR: You need to login first"), client);
+                return;
+            }
+
             System.out.println("|R| Получен запрос на выполнение команды /" + command
                     + " от клиента (" + client.getRemoteAddress() + ")." + " In Thread: "
                     +  Thread.currentThread().getName());
             log.info("Server received command: " + command + " In Thread: " +  Thread.currentThread().getName());
 
-            Response result = CommandsProvider.call(request);
+            Response result;
+            if (command.equals("login")) {
+                result = handleLogin(request, client);
+            } else if (command.equals("register")) {
+                result = handleRegistration(request);
+            } else {
+                result = CommandsProvider.call(request);
+            }
 
-            // Create new thread for sending response
             new Thread(() -> sendResponse(result, client)).start();
 
         } catch (IOException | ClassNotFoundException e) {
             log.severe("Error processing request: " + e.getMessage()
                     + " In Thread: " +  Thread.currentThread().getName());
+        }
+    }
+
+    private Response handleLogin(Request request, SocketChannel client) {
+        String[] credentials = request.getCommandStrArg().split(":");
+        if (credentials.length != 2) {
+            return new Response("ERROR: Invalid login format. Use username:password");
+        }
+
+        String username = credentials[0];
+        String password = credentials[1];
+
+        if (!registeredUsers.containsKey(username)) {
+            return new Response("ERROR: User not found");
+        }
+
+        if (!registeredUsers.get(username).equals(password)) {
+            return new Response("ERROR: Invalid password");
+        }
+
+        authenticatedClients.put(client, username);
+        return new Response("SUCCESS: Logged in as " + username);
+    }
+
+    private Response handleRegistration(Request request) {
+        String[] credentials = request.getCommandStrArg().split(":");
+        if (credentials.length != 2) {
+            return new Response("ERROR: Invalid registration format. Use username:password");
+        }
+
+        String username = credentials[0];
+        String password = credentials[1];
+
+        if (registeredUsers.containsKey(username)) {
+            return new Response("ERROR: Username already exists");
+        }
+
+        registeredUsers.put(username, password);
+        saveUsers();
+        return new Response("SUCCESS: Registered successfully. Now you can login.");
+    }
+
+    private boolean isAuthenticated(SocketChannel client) {
+        return authenticatedClients.containsKey(client);
+    }
+
+    private static void loadUsers() {
+        File file = new File(USER_DATA_FILE);
+        if (!file.exists()) return;
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            Map<String, String> loadedUsers = (Map<String, String>) ois.readObject();
+            registeredUsers.putAll(loadedUsers);
+            log.info("Loaded " + loadedUsers.size() + " registered users");
+        } catch (IOException | ClassNotFoundException e) {
+            log.warning("Failed to load user data: " + e.getMessage());
+        }
+    }
+
+    private static void saveUsers() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USER_DATA_FILE))) {
+            oos.writeObject(registeredUsers);
+            log.info("Saved " + registeredUsers.size() + " registered users");
+        } catch (IOException e) {
+            log.warning("Failed to save user data: " + e.getMessage());
         }
     }
 
