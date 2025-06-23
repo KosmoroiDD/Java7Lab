@@ -13,5 +13,8 @@
     <orderEntry type="library" name="jakarta.xml.bind-api-4.0.2" level="project" />
     <orderEntry type="library" name="jaxb-impl-4.0.3" level="project" />
     <orderEntry type="library" name="jakarta.xml.bind-api-4.0.3" level="project" />
+    <orderEntry type="library" name="postgresql-42.7.7" level="project" />
+    <orderEntry type="module" module-name="PostgresSql" />
+    <orderEntry type="library" name="postgresql" level="project" />
   </component>
 </module>

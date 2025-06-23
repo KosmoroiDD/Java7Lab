@@ -5,7 +5,6 @@
       <module fileurl="file://$PROJECT_DIR$/Client/Client.iml" filepath="$PROJECT_DIR$/Client/Client.iml" />
       <module fileurl="file://$PROJECT_DIR$/CollectionObjects/CollectionObjects.iml" filepath="$PROJECT_DIR$/CollectionObjects/CollectionObjects.iml" />
       <module fileurl="file://$PROJECT_DIR$/Common/Common.iml" filepath="$PROJECT_DIR$/Common/Common.iml" />
-      <module fileurl="file://$PROJECT_DIR$/SERVER/SERVER.iml" filepath="$PROJECT_DIR$/SERVER/SERVER.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lab6.iml" filepath="$PROJECT_DIR$/.idea/lab6.iml" />
     </modules>
   </component>
